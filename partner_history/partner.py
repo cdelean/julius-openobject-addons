@@ -87,7 +87,7 @@ class mail_message(models.Model):
             ):
                 continue
 
-            field_data = current_obj._columns[fcomield]
+            field_data = current_obj._columns[field]
 
             if not field_data:
                 continue
