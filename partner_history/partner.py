@@ -58,49 +58,60 @@ class mail_message(orm.Model):
                     target_ids.append(sec_target_id[0])
         return target_ids
 
-    def _get_object_name(self, cr, uid, ids, field_name, arg, context=None):
-        if context is None:
-            context = {}
-        result = {}
-        model_obj = self.pool.get('ir.model')
-        for message in self.browse(cr, uid, ids, context=context):
-            model_ids = model_obj.search(cr, uid, [('model','=',message.model)], limit=1)
-            if model_ids:
-                model_name = model_obj.browse(cr, uid, model_ids[0], context=context).name
-                result[message.id] = model_name
-        return result
+    @api.depends('model')
+    def _get_object_name(self):
 
-    def _get_body_txt(self, cr, uid, ids, field_name, arg, context=None):
-        if context is None:
-            context = {}
-        result = {}
-        for message in self.browse(cr, uid, ids, context=context):
-            if message.res_id:
-                record_data = self.pool.get(message.model).browse(cr, uid, message.res_id, context=context)
-                if message.model == 'crm.phonecall':
-                    body_txt = record_data.name
-                elif message.model == 'crm.meeting' or message.model == 'crm.lead':
-                    body_txt = record_data.description
-                else:
-                    body_txt = record_data.name
-                result[message.id] = body_txt
-        return result
+        model_obj = self.env['ir.model']
 
-    _columns = {
-        'partner_ids': fields.many2many('res.partner', 'message_partner_rel', 'message_id', 'partner_id', 'Partners'),
-        'object_name': fields.function(_get_object_name, type='char', string='Object Name', size=64, store=True),
-        'body_txt': fields.function(_get_body_txt, type='text', string='Content', store=True),
-    }
+        for message in self:
 
-    _order= 'date desc'
+            model_ids = model_obj.search(
+                [('model', '=', message.model)], limit=1)
+
+            if not model_ids:
+                continue
+
+            message.object_name = model_ids[0].name
+
+    @api.depends('res_id')
+    def _get_body_txt(self):
+
+        for message in self:
+            if not message.res_id:
+                continue
+
+            record_data = self.env[message.model].browse(message.res_id)
+            if message.model in ['crm.meeting', 'crm.lead']:
+                message.body_txt = record_data.description
+            else:
+                message.body_txt = record_data.name
+
+    # Fields
+
+    partner_ids = fields.Many2many(
+        'res.partner',
+        'message_partner_rel', 'message_id', 'partner_id',
+        'Partners')
+
+    object_name = fields.Char(
+        string='Object Name', size=64, store=True, compute=_get_object_name)
+
+    body_txt = fields.Text(
+        string='Content', store=True, compute=_get_body_txt)
+
+    _order = 'date desc'
 
     def create(self, cr, uid, vals, context=None):
         if not vals.get('partner_ids'):
             target_ids = []
             if vals.get('res_id') and vals.get('model'):
-                target_ids = self.compute_partner(cr, uid, active_model='res.partner', model=vals.get('model'), res_id=vals.get('res_id'), context=context)
-                target_ids = list(set(target_ids))
-            vals.update({'partner_ids': [(6, 0, target_ids)],})
+                target_ids = self.compute_partner(
+                    cr, uid,
+                    active_model='res.partner',
+                    model=vals.get('model'), res_id=vals.get('res_id'),
+                    context=context)
+
+            vals.update({'partner_ids': [(6, 0, target_ids)], })
         return super(mail_message, self).create(cr, uid, vals, context=context)
 
 
