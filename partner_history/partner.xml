@@ -1,13 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <openerp>
-	<data>
-	
+    <data>
        <record id="view_partner_form_history" model="ir.ui.view">
             <field name="name">res.partner.form.history</field>
             <field name="model">res.partner</field>
             <field name="inherit_id" ref="base.view_partner_form"/>
             <field name="arch" type="xml">
-                <page string="History" position="after">
+                <notebook position="inside">
                     <page string="Flat History">
                         <div class="oe_chatter">
                             <field name="history_ids">
@@ -21,9 +20,8 @@
                             </field>
                         </div>
                     </page>
-                </page>
+                </notebook>
             </field>
         </record>
-
-	</data>
+    </data>
 </openerp>
