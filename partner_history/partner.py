@@ -19,9 +19,11 @@
 #
 #################################################################################
 
-from openerp.osv import fields, orm
+from openerp import models, fields, api
+from openerp.osv import fields as osv_fields
 from openerp.tools.translate import _
 from openerp.tools import ustr
+
 
 class mail_message(orm.Model):
     _inherit = 'mail.message'
@@ -101,25 +103,16 @@ class mail_message(orm.Model):
             vals.update({'partner_ids': [(6, 0, target_ids)],})
         return super(mail_message, self).create(cr, uid, vals, context=context)
 
-class res_partner(orm.Model):
+
+class res_partner(models.Model):
     _inherit = 'res.partner'
 
-    def _get_message(self, cr, uid, ids, field_name, arg, context=None):
-        if context is None:
-            context = {}
-        result = {}
-        message_obj = self.pool.get('mail.message')
-        for partner in self.browse(cr, uid, ids, context=context):
-            target_ids = message_obj.search(cr, uid, [
-                    '|',('partner_ids', 'in', partner.id),
-                    '&',('model', '=', 'res.partner'),('res_id','=',partner.id)
-                ], order='date desc', context=context)
-            result[partner.id] = target_ids
-        return result
+    # Fields
 
-    _columns = {
-        # History follow-up #
-        'history_ids': fields.function(_get_message, type='many2many', relation="mail.message", string="Related Messages"),
-    }
+    history_ids = fields.Many2many(
+        'mail.message',
+        'message_partner_rel', 'partner_id', 'message_id',
+        'Related Messages'
+    )
 
 # vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:
