@@ -38,7 +38,7 @@ class mail_message(orm.Model):
                 var = current_data.get(str(name[0]))
                 if var:
                     target_ids.append(var[0])
-                    
+
         cr.execute("select name, model from ir_model_fields where relation='" + model + "' and ttype in ('many2many') and model = '" + active_model + "';")
         for field, model in cr.fetchall():
             field_data = self.pool.get(model) and self.pool.get(model)._columns.get(field, False) \
@@ -55,7 +55,7 @@ class mail_message(orm.Model):
                 for sec_target_id in sec_target_ids:
                     target_ids.append(sec_target_id[0])
         return target_ids
-    
+
     def _get_object_name(self, cr, uid, ids, field_name, arg, context=None):
         if context is None:
             context = {}
@@ -67,7 +67,7 @@ class mail_message(orm.Model):
                 model_name = model_obj.browse(cr, uid, model_ids[0], context=context).name
                 result[message.id] = model_name
         return result
-    
+
     def _get_body_txt(self, cr, uid, ids, field_name, arg, context=None):
         if context is None:
             context = {}
@@ -83,15 +83,15 @@ class mail_message(orm.Model):
                     body_txt = record_data.name
                 result[message.id] = body_txt
         return result
-    
+
     _columns = {
         'partner_ids': fields.many2many('res.partner', 'message_partner_rel', 'message_id', 'partner_id', 'Partners'),
         'object_name': fields.function(_get_object_name, type='char', string='Object Name', size=64, store=True),
         'body_txt': fields.function(_get_body_txt, type='text', string='Content', store=True),
     }
-    
+
     _order= 'date desc'
-    
+
     def create(self, cr, uid, vals, context=None):
         if not vals.get('partner_ids'):
             target_ids = []
@@ -103,7 +103,7 @@ class mail_message(orm.Model):
 
 class res_partner(orm.Model):
     _inherit = 'res.partner'
-    
+
     def _get_message(self, cr, uid, ids, field_name, arg, context=None):
         if context is None:
             context = {}
@@ -116,7 +116,7 @@ class res_partner(orm.Model):
                 ], order='date desc', context=context)
             result[partner.id] = target_ids
         return result
-    
+
     _columns = {
         # History follow-up #
         'history_ids': fields.function(_get_message, type='many2many', relation="mail.message", string="Related Messages"),
